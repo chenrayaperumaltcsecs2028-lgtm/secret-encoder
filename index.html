@@ -1,0 +1,332 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Secret Message Encoder</title>
+  <style>
+    :root{
+      --bg:#0f1220;--card:#151935;--muted:#aab1d6;--text:#eef1ff;--accent:#7c9cff;--accent2:#49e0b6;--warn:#ffb454;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 600px at 10% -10%, #1c214a 0%, #0f1220 45%), var(--bg);color:var(--text);font:600 16px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"}
+    .wrap{max-width:1000px;margin:24px auto;padding:16px}
+    .title{font-size:clamp(20px,4vw,34px);letter-spacing:.3px;margin:6px 0 2px}
+    .subtitle{color:var(--muted);font-weight:500;margin:0 0 18px}
+    .grid{display:grid;gap:14px}
+    @media(min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
+    .card{background:linear-gradient(180deg,#1a1f43 0,#131734 100%);border:1px solid rgba(124,156,255,.18);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .pad{padding:14px}
+    textarea{width:100%;min-height:190px;resize:vertical;background:#0d1130;border:1px solid rgba(124,156,255,.25);border-radius:14px;color:var(--text);padding:12px 12px;line-height:1.35}
+    textarea:focus{outline:2px solid var(--accent)}
+    label{font-size:14px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row-right{margin-left:auto}
+    select,input[type="number"],input[type="text"]{background:#0d1130;border:1px solid rgba(124,156,255,.25);border-radius:12px;color:var(--text);padding:10px 12px}
+    .btn{appearance:none;border:1px solid rgba(124,156,255,.35);background:#0f1436;color:var(--text);padding:10px 12px;border-radius:12px;font-weight:700;cursor:pointer;transition:transform .04s ease, background .25s}
+    .btn:hover{background:#11194a}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:linear-gradient(180deg,var(--accent) 0,#5b79ff 100%);color:#0b0f2e;border:none}
+    .btn.ghost{background:transparent}
+    .pill{display:inline-flex;align-items:center;gap:8px;background:#0b1030;border:1px dashed rgba(124,156,255,.35);color:var(--muted);padding:8px 12px;border-radius:999px;font-weight:600}
+    .hint{font-size:12px;color:var(--muted)}
+    .footer{opacity:.8;margin-top:8px;font-weight:500}
+    .switch{display:inline-grid;grid-template-columns:1fr 1fr;border:1px solid rgba(124,156,255,.35);border-radius:12px;overflow:hidden}
+    .switch button{background:#0b1030;padding:8px 10px;border:none;color:var(--muted);font-weight:700;cursor:pointer}
+    .switch button.active{background:var(--accent2);color:#0d1130}
+    .badge{font-size:12px;color:#0d1130;background:var(--warn);padding:2px 8px;border-radius:999px;font-weight:800}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px; background:#10163a;border:1px solid rgba(124,156,255,.3); padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row" style="gap:12px;align-items:baseline">
+      <h1 class="title">🔐 Secret Message Encoder</h1>
+      <span class="badge">Offline</span>
+    </div>
+    <p class="subtitle">Encode or decode messages right in your browser. No internet needed. Perfect for lab vibe coding ✨</p><div class="grid">
+  <!-- Left: Textareas -->
+  <div class="card pad">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <label for="inputText">Input</label>
+      <div class="row">
+        <button class="btn ghost" id="btnClear">Clear</button>
+        <button class="btn ghost" id="btnSwap" title="Swap input/output">Swap ↔</button>
+      </div>
+    </div>
+    <textarea id="inputText" placeholder="Type your secret text here..."></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="btnRun">Run</button>
+      <button class="btn" id="btnCopyOut">Copy Output</button>
+      <button class="btn" id="btnDownload">Download .txt</button>
+      <span class="pill" id="status">Ready</span>
+      <span class="row-right hint">Tip: Select method & mode on the right →</span>
+    </div>
+  </div>
+
+  <!-- Right: Controls + Output -->
+  <div class="card pad">
+    <div class="row" style="justify-content:space-between; margin-bottom:10px">
+      <label>Method</label>
+      <button class="btn ghost" id="btnHelp">Help</button>
+    </div>
+    <div class="row" style="margin-bottom:10px">
+      <select id="method">
+        <option value="reverse">Reverse Text</option>
+        <option value="rot13">ROT13</option>
+        <option value="caesar">Caesar Shift</option>
+        <option value="vigenere">Vigenère (key)</option>
+        <option value="base64">Base64</option>
+        <option value="emoji">Emoji Cipher</option>
+        <option value="leet">Leetspeak</option>
+        <option value="morse">Morse Code</option>
+      </select>
+      <div class="switch" id="modeSwitch" role="tablist" aria-label="Encode/Decode">
+        <button id="modeEncode" class="active" aria-selected="true">Encode</button>
+        <button id="modeDecode" aria-selected="false">Decode</button>
+      </div>
+    </div>
+
+    <div class="row" id="options" style="gap:12px;margin-bottom:10px"></div>
+
+    <label for="outputText">Output</label>
+    <textarea id="outputText" placeholder="Your result appears here..." readonly></textarea>
+    <div class="footer">Keyboard: <span class="kbd">Ctrl/⌘ + Enter</span> to run • <span class="kbd">Ctrl/⌘ + L</span> to clear</div>
+  </div>
+</div>
+
+<p class="hint" style="margin-top:14px">This is a learning tool. Not for real security 🔒. For fun only!</p>
+
+  </div> <dialog id="help">
+    <form method="dialog" style="max-width:720px;width:min(92vw,720px);background:#0f1436;color:var(--text);border:1px solid rgba(124,156,255,.35);border-radius:16px;padding:18px">
+      <h3 style="margin:0 0 6px">Methods</h3>
+      <ul style="margin:6px 0 12px; line-height:1.5">
+        <li><b>Reverse</b>: flips your text backwards.</li>
+        <li><b>ROT13</b>: rotates letters by 13 places. Same for encode/decode.</li>
+        <li><b>Caesar</b>: shift letters by a number. Use negative to shift left.</li>
+        <li><b>Vigenère</b>: uses a word as a repeating key. Letters only.</li>
+        <li><b>Base64</b>: encodes raw bytes as text. Useful for safe copy/paste.</li>
+        <li><b>Emoji</b>: maps letters to playful emojis 😄 (lossy!).</li>
+        <li><b>Leet</b>: swaps letters for 1337-style symbols.</li>
+        <li><b>Morse</b>: dots and dashes for A–Z 0–9 plus basic punctuation.</li>
+      </ul>
+      <p class="hint">Note: Emoji and Leet are not perfectly reversible.
+      </p>
+      <div class="row" style="margin-top:10px; justify-content:flex-end"><button class="btn">Close</button></div>
+    </form>
+  </dialog> <script>
+  (function(){
+    const $ = sel => document.querySelector(sel);
+    const status = msg => { const s = $('#status'); s.textContent = msg; s.style.borderColor = 'rgba(124,156,255,.6)'; setTimeout(()=>{s.textContent='Ready'; s.style.borderColor='rgba(124,156,255,.35)';}, 1800); };
+
+    const input = $('#inputText');
+    const output = $('#outputText');
+    const methodSel = $('#method');
+    const optsRow = $('#options');
+
+    const encodeBtn = $('#modeEncode');
+    const decodeBtn = $('#modeDecode');
+    let mode = 'encode';
+    encodeBtn.onclick = ()=>{ mode='encode'; encodeBtn.classList.add('active'); decodeBtn.classList.remove('active'); run(); saveState(); };
+    decodeBtn.onclick = ()=>{ mode='decode'; decodeBtn.classList.add('active'); encodeBtn.classList.remove('active'); run(); saveState(); };
+
+    // Options builders
+    function buildOptions(){
+      optsRow.innerHTML='';
+      const m = methodSel.value;
+      if(m==='caesar'){
+        optsRow.append(labelWrap('Shift', num('shift', 3, -26, 26)));
+      }
+      if(m==='vigenere'){
+        optsRow.append(labelWrap('Key', text('vigkey', 'SECRET')));
+      }
+      if(m==='morse'){
+        optsRow.append(labelWrap('Separator', text('msep', ' / ')));
+      }
+    }
+
+    function labelWrap(textLabel, node){
+      const w = document.createElement('div');
+      w.className='row';
+      const l = document.createElement('label');
+      l.textContent=textLabel;
+      l.style.marginRight='6px';
+      w.append(l,node);
+      return w;
+    }
+    function num(name, val, min, max){
+      const i=document.createElement('input'); i.type='number'; i.id=name; i.value=load(name,val); if(min!=null) i.min=min; if(max!=null) i.max=max; i.addEventListener('input', runAndSave); return i;
+    }
+    function text(name, val){
+      const i=document.createElement('input'); i.type='text'; i.id=name; i.value=load(name,val); i.addEventListener('input', runAndSave); return i;
+    }
+
+    // Methods
+    const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const a='abcdefghijklmnopqrstuvwxyz';
+
+    function reverse(s){ return s.split('').reverse().join(''); }
+
+    function rotN(s, n){
+      return s.replace(/[A-Za-z]/g, ch=>{
+        const set = ch<= 'Z' ? A : a; const idx = set.indexOf(ch); return set[(idx + n + 26)%26];
+      });
+    }
+
+    function caesar(s, shift){ return rotN(s, (shift|0)%26); }
+    function rot13(s){ return rotN(s,13); }
+
+    function sanitizeAlpha(s){ return s.replace(/[^A-Za-z]/g,''); }
+
+    function vigenereEncode(s, key){
+      key = sanitizeAlpha(key); if(!key) return s;
+      let k = key.toUpperCase(); let ki=0;
+      return s.replace(/[A-Za-z]/g, ch=>{
+        const isU = ch<= 'Z'; const set = isU ? A : a; const base = isU ? 'A'.charCodeAt(0) : 'a'.charCodeAt(0);
+        const shift = (k.charCodeAt(ki++%k.length) - 65);
+        const code = (ch.charCodeAt(0) - base + shift + 26) % 26 + base; 
+        return String.fromCharCode(code);
+      });
+    }
+    function vigenereDecode(s, key){
+      key = sanitizeAlpha(key); if(!key) return s;
+      let k = key.toUpperCase(); let ki=0;
+      return s.replace(/[A-Za-z]/g, ch=>{
+        const isU = ch<= 'Z'; const set = isU ? A : a; const base = isU ? 'A'.charCodeAt(0) : 'a'.charCodeAt(0);
+        const shift = (k.charCodeAt(ki++%k.length) - 65);
+        const code = (ch.charCodeAt(0) - base - shift + 26) % 26 + base; 
+        return String.fromCharCode(code);
+      });
+    }
+
+    // Base64 (UTF-8 safe)
+    function toBase64(str){
+      const utf8 = new TextEncoder().encode(str);
+      let bin = ''; utf8.forEach(b=>bin+=String.fromCharCode(b));
+      return btoa(bin);
+    }
+    function fromBase64(b64){
+      const bin = atob(b64);
+      const bytes = Uint8Array.from(bin, c=>c.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    // Emoji cipher (lossy)
+    const emojiMap = {
+      a:'😀', b:'🎈', c:'🌟', d:'🍩', e:'🚀', f:'🍟', g:'🎮', h:'🌈', i:'🍕', j:'🎵',
+      k:'🔥', l:'🍀', m:'🌙', n:'💡', o:'🎉', p:'📦', q:'🧊', r:'🌊', s:'⭐', t:'☕',
+      u:'🧃', v:'🪄', w:'🧸', x:'🥁', y:'🪙', z:'🧩', ' ':'⬜'
+    };
+    const revEmoji = Object.fromEntries(Object.entries(emojiMap).map(([k,v])=>[v,k]));
+
+    function emojiEncode(s){ return s.split('').map(ch=>{
+      const low = ch.toLowerCase();
+      return emojiMap[low] || ch;
+    }).join(''); }
+
+    function emojiDecode(s){ return s.split('').map(ch=>{
+      return revEmoji[ch] ? revEmoji[ch] : ch;
+    }).join(''); }
+
+    // Leetspeak (approx.)
+    const leetMap = { a:'4', e:'3', i:'1', o:'0', s:'5', t:'7', g:'9', b:'8' };
+    const revLeet = Object.fromEntries(Object.entries(leetMap).map(([k,v])=>[v,k]));
+    function leetEncode(s){ return s.replace(/[aeiostgb]/gi, ch=>{
+      const low = ch.toLowerCase(); const rep = leetMap[low] || ch; return ch===low?rep:rep; }); }
+    function leetDecode(s){ return s.replace(/[43105798]/g, d=>revLeet[d]||d); }
+
+    // Morse
+    const MORSE = {
+      'A':'.-', 'B':'-...', 'C':'-.-.', 'D':'-..', 'E':'.', 'F':'..-.', 'G':'--.', 'H':'....',
+      'I':'..', 'J':'.---', 'K':'-.-', 'L':'.-..', 'M':'--', 'N':'-.', 'O':'---', 'P':'.--.', 'Q':'--.-',
+      'R':'.-.', 'S':'...', 'T':'-', 'U':'..-', 'V':'...-', 'W':'.--', 'X':'-..-', 'Y':'-.--', 'Z':'--..',
+      '0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.',
+      '.':'.-.-.-', ',':'--..--', '?':'..--..', "'":'.----.', '!':'-.-.--', '/':'-..-.', '(':'-.--.', ')':'-.--.-', '&':'.-...', ':':'---...', ';':'-.-.-.', '=':'-...-', '+':'.-.-.', '-':'-....-', '_':'..--.-', '"':'.-..-.', '$':'...-..-', '@':'.--.-.', ' ':'/'
+    };
+    const REV_MORSE = Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+
+    function morseEncode(s, sep){
+      return s.toUpperCase().split('').map(ch=> MORSE[ch] || ch).join(sep||' ');
+    }
+    function morseDecode(s, sep){
+      let parts = s.trim().split(/[\s|/]+/); // allow spaces or slashes
+      return parts.map(p=> REV_MORSE[p] || (p==='/'?' ':'')).join('');
+    }
+
+    // Core run
+    function run(){
+      const m = methodSel.value;
+      const text = input.value;
+      let res = '';
+      try{
+        if(m==='reverse') res = reverse(text);
+        else if(m==='rot13') res = rot13(text);
+        else if(m==='caesar') {
+          const shift = parseInt($('#shift')?.value||'0',10) || 0;
+          res = (mode==='encode') ? caesar(text, shift) : caesar(text, -shift);
+        }
+        else if(m==='vigenere'){
+          const key = ($('#vigkey')?.value||'');
+          res = (mode==='encode') ? vigenereEncode(text, key) : vigenereDecode(text, key);
+        }
+        else if(m==='base64'){
+          res = (mode==='encode') ? toBase64(text) : fromBase64(text);
+        }
+        else if(m==='emoji'){
+          res = (mode==='encode') ? emojiEncode(text) : emojiDecode(text);
+        }
+        else if(m==='leet'){
+          res = (mode==='encode') ? leetEncode(text) : leetDecode(text);
+        }
+        else if(m==='morse'){
+          const sep = $('#msep')?.value || ' ';
+          res = (mode==='encode') ? morseEncode(text, sep) : morseDecode(text, sep);
+        }
+      }catch(e){ res = '⚠️ Error: '+ e.message; }
+      output.value = res;
+    }
+
+    // UI events
+    $('#btnRun').onclick = ()=>{ run(); status('Done'); saveState(); };
+    $('#btnCopyOut').onclick = async ()=>{ try{ await navigator.clipboard.writeText(output.value); status('Copied!'); }catch{ status('Copy failed'); } };
+    $('#btnDownload').onclick = ()=>{
+      const blob = new Blob([output.value], {type:'text/plain'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'secret_output.txt'; a.click(); URL.revokeObjectURL(a.href);
+      status('Downloaded');
+    };
+    $('#btnClear').onclick = ()=>{ input.value=''; output.value=''; status('Cleared'); };
+    $('#btnSwap').onclick = ()=>{ const t=input.value; input.value=output.value; output.value=t; run(); status('Swapped'); };
+    $('#btnHelp').onclick = ()=> $('#help').showModal();
+
+    methodSel.addEventListener('change', ()=>{ buildOptions(); run(); saveState(); });
+    input.addEventListener('input', ()=>{ run(); });
+
+    document.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='enter'){ e.preventDefault(); $('#btnRun').click(); }
+      if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='l'){ e.preventDefault(); $('#btnClear').click(); }
+    });
+
+    // State persistence
+    function saveState(){
+      const state = { mode, method: methodSel.value, shift: $('#shift')?.value, vigkey: $('#vigkey')?.value, msep: $('#msep')?.value };
+      localStorage.setItem('sme_state', JSON.stringify(state));
+    }
+    function load(key, def){
+      try{ const state = JSON.parse(localStorage.getItem('sme_state')||'{}'); return state[key]??def; }catch{ return def; }
+    }
+
+    // Init
+    (function init(){
+      // restore state
+      try{
+        const state = JSON.parse(localStorage.getItem('sme_state')||'{}');
+        if(state.method) methodSel.value = state.method;
+        if(state.mode==='decode'){ mode='decode'; decodeBtn.classList.add('active'); encodeBtn.classList.remove('active'); }
+      }catch{}
+      buildOptions();
+      run();
+    })();
+  })();
+  </script></body>
+</html>
